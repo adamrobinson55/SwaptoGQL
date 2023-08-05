@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@apollo/client": "^3.7.17",
+    "@apollo/server": "^4.9.0",
     "gitignore": "^0.7.0"
   }
 }

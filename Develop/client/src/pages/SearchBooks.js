@@ -9,12 +9,13 @@ import {
 } from 'react-bootstrap';
 
 import Auth from '../utils/auth';
-import { saveBook, searchGoogleBooks } from '../utils/API';
+import { searchGoogleBooks } from '../utils/API';
 import { saveBookIds, getSavedBookIds } from '../utils/localStorage';
 
-import { useMutation, useQuery } from '@apollo/client'
-import { GET_ME } from '../utils/queries'
-import { ADD_USER, LOGIN_USER, SAVE_BOOK, REMOVE_BOOK } from '../utils/mutations'
+import { useMutation } from '@apollo/client'
+import { SAVE_BOOK } from '../utils/mutations'
+
+
 
 const SearchBooks = () => {
   // create state for holding returned google api data
@@ -25,11 +26,13 @@ const SearchBooks = () => {
   // create state to hold saved bookId values
   const [savedBookIds, setSavedBookIds] = useState(getSavedBookIds());
 
+  const [saveBook] = useMutation(SAVE_BOOK)
+
   // set up useEffect hook to save `savedBookIds` list to localStorage on component unmount
   // learn more here: https://reactjs.org/docs/hooks-effect.html#effects-with-cleanup
   useEffect(() => {
     return () => saveBookIds(savedBookIds);
-  });
+  }, [savedBookIds]);
 
   // create method to search for books and set state on form submit
   const handleFormSubmit = async (event) => {
@@ -38,7 +41,6 @@ const SearchBooks = () => {
     if (!searchInput) {
       return false;
     }
-
     try {
       const response = await searchGoogleBooks(searchInput);
 
@@ -49,7 +51,7 @@ const SearchBooks = () => {
       const { items } = await response.json();
 
       const bookData = items.map((book) => ({
-        bookId: book.id,
+        bookId: book.Id,
         authors: book.volumeInfo.authors || ['No author to display'],
         title: book.volumeInfo.title,
         description: book.volumeInfo.description,
@@ -76,18 +78,18 @@ const SearchBooks = () => {
     }
 
     try {
-      const response = await saveBook(bookToSave, token);
+      const { data } = await saveBook({
+        variables: {
+          bookData: { ...bookToSave }
+        }
+      })
 
-      if (!response.ok) {
-        throw new Error('something went wrong!');
-      }
-
-      // if book successfully saves to user's account, save book id to state
-      setSavedBookIds([...savedBookIds, bookToSave.bookId]);
+      setSavedBookIds([...savedBookIds, data.saveBook.bookId])
     } catch (err) {
       console.error(err);
     }
   };
+
 
   return (
     <>
@@ -95,15 +97,15 @@ const SearchBooks = () => {
         <Container>
           <h1>Search for Books!</h1>
           <Form onSubmit={handleFormSubmit}>
-            <Form.Row>
+            <Row>
               <Col xs={12} md={8}>
                 <Form.Control
-                  name='searchInput'
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  type='text'
-                  size='lg'
-                  placeholder='Search for a book'
+                  name='searchInput' 
+                  value={searchInput} 
+                  onChange={(e) => setSearchInput(e.target.value)} 
+                  type='text' 
+                  size='lg' 
+                  placeholder='Search for a book' 
                 />
               </Col>
               <Col xs={12} md={4}>
@@ -111,7 +113,7 @@ const SearchBooks = () => {
                   Submit Search
                 </Button>
               </Col>
-            </Form.Row>
+            </Row>
           </Form>
         </Container>
       </div>
@@ -155,4 +157,4 @@ const SearchBooks = () => {
   );
 };
 
-export default SearchBooks;
+export default SearchBooks
